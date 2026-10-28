@@ -15,6 +15,10 @@ Fluxo: **criar projeto → importar a arte → posicionar campos (`{{nome}}`, `{
 - **Edição individual**: “Editar somente este certificado” grava exceções separadas do modelo (posição, tamanho, ajuste, texto), com “Restaurar configuração global”.
 - **Pré-visualização**: certificado a certificado (“Certificado 42 de 650”), galeria virtualizada e diagnóstico (nomes que não couberam, campos vazios, variáveis sem correspondência, elementos fora da página, modelo sem fundo, duplicidades) com acesso direto ao certificado.
 - **Exportação em massa** num Web Worker: ZIP de PDFs individuais, PDF consolidado, PNG/JPG (150/300 DPI); todos/selecionados/filtrados/sem erros; nomes dinâmicos (`Certificado_{{nome}}`) com sanitização e sem sobrescrita; ZIP em uma pasta ou por coluna (ex.: categoria); progresso, cancelamento e “repetir falhas”. Em navegadores com File System Access API o ZIP pode ser gravado direto no disco.
+- **Vários modelos** por projeto (ex.: participante, palestrante, organizador), cada um com arte, formato e campos próprios: criar, duplicar, renomear e excluir no editor; coluna “Modelo” na tabela e **regras por valor de coluna** (ex.: Categoria = Palestrante → modelo Palestrante), aplicadas também a novas importações; exportação e galeria por modelo e ZIP organizado por modelo.
+- **Fontes personalizadas**: envio de TTF/OTF com leitura de família/peso/itálico, alerta de acentos ausentes e confirmação de licença; usadas no editor e embutidas no PDF. Fonte que deixar de existir cai na padrão e aparece no diagnóstico.
+- **Réguas e guias**: réguas em mm que acompanham o zoom e destacam a seleção; arraste da régua para criar guias, que participam do encaixe magnético; remover arrastando de volta ou com duplo clique; bloquear/limpar no painel da página.
+- **Histórico de versões do layout**: versões automáticas ao abrir o projeto e a cada 10 minutos de edição (até 30) e versões manuais nomeadas; restauração com miniatura, mantendo os participantes (também desfazível com Ctrl+Z). Versões vão junto no backup `.certproj`.
 - **Persistência**: salvamento automático no navegador (IndexedDB), desfazer/refazer, recuperação após recarregar/fechar, backup e restauração do projeto em arquivo `.certproj`.
 
 ## Arquitetura
@@ -62,7 +66,7 @@ Scripts:
 | `npm run test:e2e` | testes de ponta a ponta (Playwright, requer `npm run build` antes) |
 | `npm run fonts` | baixa novamente as fontes TTF para `public/fonts` |
 
-Os testes E2E sobem `next start` com uma senha própria e cobrem: acesso sem autenticação, senha incorreta e limite de tentativas, cookie HttpOnly, token adulterado, fluxo completo (PDF → campo nome → CSV de 100 linhas → edição de célula → edição em massa → ajuste individual → ZIP → PDF único → recarregar e conferir persistência), PDF vertical, PNG/JPG como fundo, XLSX, ZIP por categoria com acentos, sinalização de nomes que não cabem, editor (arrastar, desfazer, atalhos, bloqueio), fidelidade tela × PDF (requer `pdftoppm`) e 1.000 participantes (≈ 17 s para gerar 1.000 PDFs).
+Os testes E2E sobem `next start` com uma senha própria e cobrem: acesso sem autenticação, senha incorreta e limite de tentativas, cookie HttpOnly, token adulterado, fluxo completo (PDF → campo nome → CSV de 100 linhas → edição de célula → edição em massa → ajuste individual → ZIP → PDF único → recarregar e conferir persistência), PDF vertical, PNG/JPG como fundo, XLSX, ZIP por categoria com acentos, sinalização de nomes que não cabem, editor (arrastar, desfazer, atalhos, bloqueio), fidelidade tela × PDF (requer `pdftoppm`), vários modelos com regras + fonte própria + guias + histórico de versões, e 1.000 participantes (≈ 17 s para gerar 1.000 PDFs).
 
 ## Implantação na Vercel
 
@@ -82,6 +86,5 @@ Detalhes de segurança:
 ## Limitações conhecidas e próximos passos
 
 - Projetos são locais ao navegador (use o backup `.certproj`); sincronização via Supabase é o próximo passo natural.
-- O modelo de dados já suporta vários modelos por projeto (participante → `templateId`, filtros e exportação por modelo); a interface para criar/gerenciar modelos adicionais e regras de associação por categoria vem na próxima fase.
-- Ainda não implementados: réguas e guias arrastáveis, importação de fontes personalizadas, histórico de versões do modelo.
+- Fontes personalizadas aceitam TTF e OTF (WOFF/WOFF2 não).
 - Planilhas `.xls` (formato antigo) não são lidas: salve como `.xlsx` ou `.csv`.

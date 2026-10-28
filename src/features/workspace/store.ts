@@ -18,7 +18,9 @@ import type {
   Project,
   Template,
   TemplateRule,
+  VersionData,
 } from "@/lib/model/types";
+import { restoreVersion } from "@/lib/persistence/versions";
 import { templateAssignments } from "@/lib/participants/templates";
 import { newId } from "@/lib/utils/id";
 import { slugify, uniqueKey } from "@/lib/variables";
@@ -110,6 +112,9 @@ interface Actions {
   moveGuide(id: ID, pos: number): void;
   removeGuide(id: ID): void;
   clearGuides(): void;
+
+  /** Restaura o layout de uma versão (modelos, dados fixos, fontes, regras), mantendo os participantes. */
+  restoreLayout(data: VersionData): void;
 
   addCustomFont(font: CustomFont): void;
   removeCustomFont(id: ID): void;
@@ -487,6 +492,23 @@ export const useWorkspace = create<WorkspaceStore>()(
           updateTemplate((t) => {
             t.guides = [];
           });
+        },
+
+        restoreLayout(data) {
+          const project = get().project;
+          if (!project) return;
+          const restored = restoreVersion(project, data);
+          mutate((d) => {
+            d.templates = restored.templates as Draft<Template>[];
+            d.globals = restored.globals;
+            d.customFonts = restored.customFonts;
+            d.templateRules = restored.templateRules;
+            d.participants = restored.participants as Draft<Participant>[];
+          });
+          // Mantém o modelo aberto, se ele existir na versão restaurada.
+          const templates = get().project?.templates ?? [];
+          const active = templates.some((t) => t.id === get().activeTemplateId) ? get().activeTemplateId : (templates[0]?.id ?? null);
+          set({ selectedIds: [], individualMode: false, activeTemplateId: active });
         },
 
         addCustomFont(font) {

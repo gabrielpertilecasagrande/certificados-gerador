@@ -1,7 +1,7 @@
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { createProject, detectPreset, pageFromPreset } from "@/lib/model/defaults";
 import { migrateProject } from "@/lib/model/migrate";
-import type { AssetRecord, Background, ID, PagePreset, PageSize, Project } from "@/lib/model/types";
+import type { AssetRecord, Background, ID, PagePreset, PageSize, Project, ProjectVersion } from "@/lib/model/types";
 import { newId } from "@/lib/utils/id";
 import type { ProjectRepository } from "./repository";
 
@@ -107,6 +107,7 @@ export async function exportBackup(repo: ProjectRepository, id: ID): Promise<Blo
     "assets.json": strToU8(JSON.stringify(assets.map(({ id: aid, mime, name, createdAt }) => ({ id: aid, mime, name, createdAt })))),
   };
   for (const a of assets) files[`assets/${a.id}`] = new Uint8Array(await a.blob.arrayBuffer());
+  files["versions.json"] = strToU8(JSON.stringify(await repo.listVersions(id)));
   const zipped = zipSync(files, { level: 0 });
   return new Blob([zipped.slice().buffer as ArrayBuffer], { type: "application/zip" });
 }
@@ -132,5 +133,11 @@ export async function importBackup(repo: ProjectRepository, file: Blob): Promise
   }
   const restored: Project = { ...remapAssets(project, map), id: newProjectId, updatedAt: Date.now() };
   await repo.saveProject(restored);
+  const versions = entries["versions.json"] ? (JSON.parse(strFromU8(entries["versions.json"])) as ProjectVersion[]) : [];
+  for (const v of versions) {
+    // Reaproveita o remapeamento de arquivos aplicando-o ao layout da versão.
+    const data = remapAssets({ ...project, ...v.data }, map);
+    await repo.saveVersion({ ...v, id: newId(), projectId: newProjectId, data: { templates: data.templates, globals: data.globals, customFonts: data.customFonts, templateRules: data.templateRules } });
+  }
   return restored;
 }

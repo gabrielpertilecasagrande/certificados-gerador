@@ -1,4 +1,4 @@
-import type { AssetRecord, ID, Project, ProjectSummary } from "@/lib/model/types";
+import type { AssetRecord, ID, Project, ProjectSummary, ProjectVersion } from "@/lib/model/types";
 
 /**
  * Contrato de persistência. A implementação atual usa IndexedDB (navegador);
@@ -9,6 +9,11 @@ export interface ProjectRepository {
   getProject(id: ID): Promise<Project | undefined>;
   saveProject(project: Project): Promise<void>;
   deleteProject(id: ID): Promise<void>;
+
+  /** Histórico de versões do layout (mais recentes primeiro). */
+  listVersions(projectId: ID): Promise<ProjectVersion[]>;
+  saveVersion(version: ProjectVersion): Promise<void>;
+  deleteVersion(id: ID): Promise<void>;
 
   putAsset(asset: AssetRecord): Promise<void>;
   getAsset(id: ID): Promise<AssetRecord | undefined>;

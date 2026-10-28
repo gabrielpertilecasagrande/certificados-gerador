@@ -15,6 +15,7 @@ import { useWorkspace } from "./store";
 import { TopBar } from "./top-bar";
 import { useAutosave } from "./use-autosave";
 import { useShortcuts } from "./use-shortcuts";
+import { useAutoVersions } from "./use-versions";
 
 export function Workspace() {
   const { id } = useParams<{ id: string }>();
@@ -24,6 +25,7 @@ export function Workspace() {
 
   useAutosave();
   useShortcuts();
+  useAutoVersions(status === "ready" ? id : undefined);
 
   useEffect(() => {
     let alive = true;

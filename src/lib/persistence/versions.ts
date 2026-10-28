@@ -1,4 +1,8 @@
-import type { Project, VersionData } from "@/lib/model/types";
+import type { Project, ProjectVersion, VersionData } from "@/lib/model/types";
+import { newId } from "@/lib/utils/id";
+import type { ProjectRepository } from "./repository";
+
+export const MAX_AUTO_VERSIONS = 30;
 
 export function snapshotOf(project: Project): VersionData {
   return structuredClone({
@@ -26,7 +30,7 @@ export function restoreVersion(project: Project, data: VersionData): Project {
   const fallback = snap.templates[0]?.id ?? project.templates[0].id;
   return {
     ...project,
-    templates: snap.templates.length ? snap.templates : project.templates,
+    templates: snap.templates.length ? snap.templates.map((t) => ({ ...t, guides: t.guides ?? [] })) : project.templates,
     globals: snap.globals,
     customFonts: snap.customFonts ?? [],
     templateRules: (snap.templateRules ?? []).filter((r) => templateIds.has(r.templateId)),
@@ -37,4 +41,17 @@ export function restoreVersion(project: Project, data: VersionData): Project {
       return same ? p : { ...p, templateId, overrides };
     }),
   };
+}
+
+/** Grava uma versão do layout atual. Versões automáticas iguais à última não são repetidas. */
+export async function saveVersion(repo: ProjectRepository, project: Project, label: string, auto: boolean): Promise<ProjectVersion | null> {
+  const data = snapshotOf(project);
+  const existing = await repo.listVersions(project.id);
+  if (auto && existing[0] && snapshotKey(existing[0].data) === snapshotKey(data)) return null;
+  const version: ProjectVersion = { id: newId(), projectId: project.id, createdAt: Date.now(), label, auto, data };
+  await repo.saveVersion(version);
+  // Mantém as automáticas mais recentes; as manuais ficam para sempre.
+  const autos = [version, ...existing].filter((v) => v.auto);
+  for (const old of autos.slice(MAX_AUTO_VERSIONS)) await repo.deleteVersion(old.id);
+  return version;
 }

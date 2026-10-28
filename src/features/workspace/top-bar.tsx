@@ -23,6 +23,7 @@ import { Spinner, Tip } from "@/components/ui/misc";
 import { LogoutButton } from "@/components/logout-button";
 import { cn } from "@/lib/utils/cn";
 import { useView } from "@/features/editor/view-store";
+import { HistoryButton } from "./history-dialog";
 import { redo, undo, useWorkspace, type WorkspaceTab } from "./store";
 
 const TABS: { id: WorkspaceTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
@@ -130,6 +131,7 @@ export function TopBar() {
             <Redo2 />
           </Button>
         </Tip>
+        <HistoryButton />
         </div>
         {tab === "editor" && (
           <div className="ml-1 hidden items-center gap-0.5 border-l border-border pl-1.5 lg:flex">

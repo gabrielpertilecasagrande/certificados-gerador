@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Gerados: worker do pdf.js (postinstall) e relatórios de teste.
+    "public/pdfjs/**",
+    "test-results/**",
+    "playwright-report/**",
   ]),
 ]);
 
