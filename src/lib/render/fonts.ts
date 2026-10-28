@@ -30,17 +30,38 @@ export const FONT_CATEGORIES: Record<string, "sans" | "serif" | "script" | "disp
   "Pinyon Script": "script",
 };
 
-export function weightsFor(family: string): number[] {
-  return [...new Set(FONT_VARIANTS.filter((v) => v.family === family).map((v) => v.weight))].sort((a, b) => a - b);
+/** Fontes enviadas para o projeto (TTF/OTF). A chave no FontStore é `asset:<assetId>`. */
+export interface ProjectFont {
+  family: string;
+  weight: number;
+  italic: boolean;
+  assetId: string;
 }
 
-export function hasItalic(family: string): boolean {
-  return FONT_VARIANTS.some((v) => v.family === family && v.italic);
+export const customFontFile = (assetId: string) => `asset:${assetId}`;
+export const isCustomFontFile = (file: string) => file.startsWith("asset:");
+
+function variants(custom: readonly ProjectFont[] = []): FontVariant[] {
+  if (!custom.length) return FONT_VARIANTS;
+  return [...FONT_VARIANTS, ...custom.map((c) => ({ family: c.family, weight: c.weight, italic: c.italic, file: customFontFile(c.assetId) }))];
 }
 
-/** Escolhe o arquivo de fonte mais próximo do estilo pedido. */
-export function resolveFontVariant(family: string, weight: number, italic: boolean): FontVariant {
-  let candidates = FONT_VARIANTS.filter((v) => v.family === family);
+export function familyAvailable(family: string, custom: readonly ProjectFont[] = []): boolean {
+  return variants(custom).some((v) => v.family === family);
+}
+
+export function weightsFor(family: string, custom: readonly ProjectFont[] = []): number[] {
+  return [...new Set(variants(custom).filter((v) => v.family === family).map((v) => v.weight))].sort((a, b) => a - b);
+}
+
+export function hasItalic(family: string, custom: readonly ProjectFont[] = []): boolean {
+  return variants(custom).some((v) => v.family === family && v.italic);
+}
+
+/** Escolhe o arquivo de fonte mais próximo do estilo pedido (família ausente → fonte padrão). */
+export function resolveFontVariant(family: string, weight: number, italic: boolean, custom: readonly ProjectFont[] = []): FontVariant {
+  const all = variants(custom);
+  let candidates = all.filter((v) => v.family === family);
   if (candidates.length === 0) candidates = FONT_VARIANTS.filter((v) => v.family === DEFAULT_FAMILY);
   const sameStyle = candidates.filter((v) => v.italic === italic);
   const pool = sameStyle.length ? sameStyle : candidates;
@@ -48,7 +69,7 @@ export function resolveFontVariant(family: string, weight: number, italic: boole
 }
 
 /** Nome CSS único por arquivo, usado para registrar a fonte no navegador via FontFace. */
-export const cssFontName = (file: string) => `cert-${file.replace(/\.ttf$/, "")}`;
+export const cssFontName = (file: string) => `cert-${file.replace(/\.ttf$/, "").replace(/[^a-zA-Z0-9_-]/g, "-")}`;
 
 export type FontkitFont = fontkitNs.Font;
 

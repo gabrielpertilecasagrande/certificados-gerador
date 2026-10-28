@@ -1,8 +1,10 @@
 "use client";
 
-import { FontStore, cssFontName } from "@/lib/render/fonts";
+import { FontStore, cssFontName, isCustomFontFile } from "@/lib/render/fonts";
+import { getAssetBytes } from "./assets";
 
 export const browserFonts = new FontStore(async (file) => {
+  if (isCustomFontFile(file)) return (await getAssetBytes(file.slice("asset:".length))).bytes;
   const res = await fetch(`/fonts/${encodeURIComponent(file)}`);
   if (!res.ok) throw new Error(`Falha ao carregar fonte ${file}`);
   return new Uint8Array(await res.arrayBuffer());

@@ -11,6 +11,8 @@ import type { ResolvedCertificate, ResolvedItem, ResolvedText } from "@/lib/rend
 import { getBackgroundDrawable, getImageBitmap } from "@/lib/runtime/assets";
 import { browserFonts } from "@/lib/runtime/fonts";
 import { useWorkspace } from "@/features/workspace/store";
+import { ptToMm } from "@/lib/utils/units";
+import { Ruler, RULER } from "./rulers";
 import { snapBox, type Guide } from "./snapping";
 import { MAX_ZOOM, MIN_ZOOM, useView } from "./view-store";
 
@@ -63,7 +65,9 @@ export function EditorCanvas({ template, cert, overriddenIds, individualMode }: 
   const { ref, size } = useContainerSize();
   const stageRef = useRef<Konva.Stage>(null);
   const trRef = useRef<Konva.Transformer>(null);
-  const { zoom, fitNonce, showMargins, showGuides, snap, showBackground } = useView();
+  const { zoom, fitNonce, showMargins, showGuides, snap, showBackground, showRulers, guidesLocked } = useView();
+  const [pendingGuide, setPendingGuide] = useState<{ orientation: "v" | "h"; pos: number } | null>(null);
+  const [draggingGuide, setDraggingGuide] = useState<{ id: string; pos: number } | null>(null);
   const setView = useView((s) => s.set);
   const [offset, setOffset] = useState({ x: 40, y: 40 });
   const [guides, setGuides] = useState<Guide[]>([]);
@@ -395,6 +399,33 @@ export function EditorCanvas({ template, cert, overriddenIds, individualMode }: 
 
   const cursor = spaceDown ? "grab" : undefined;
 
+  /** Arrastar a partir da régua: régua de cima cria guia horizontal; a da esquerda, vertical. */
+  const startGuide = (orientation: "v" | "h") => (e: React.PointerEvent) => {
+    e.preventDefault();
+    const rect = ref.current!.getBoundingClientRect();
+    const posOf = (ev: PointerEvent) =>
+      orientation === "h" ? (ev.clientY - rect.top - offset.y) / zoom : (ev.clientX - rect.left - offset.x) / zoom;
+    const onMove = (ev: PointerEvent) => setPendingGuide({ orientation, pos: posOf(ev) });
+    const onUp = (ev: PointerEvent) => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      setPendingGuide(null);
+      const inside = orientation === "h" ? ev.clientY - rect.top > RULER : ev.clientX - rect.left > RULER;
+      if (inside) useWorkspace.getState().addGuide({ orientation, pos: Math.round(posOf(ev) * 2) / 2 });
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  };
+
+  const selBox = useMemo(() => {
+    const sel = template.elements.filter((e) => selectedIds.includes(e.id));
+    if (!sel.length) return null;
+    return {
+      x: { from: Math.min(...sel.map((e) => e.x)), to: Math.max(...sel.map((e) => e.x + e.width)) },
+      y: { from: Math.min(...sel.map((e) => e.y)), to: Math.max(...sel.map((e) => e.y + e.height)) },
+    };
+  }, [template.elements, selectedIds]);
+
   return (
     <div ref={ref} className="relative h-full w-full overflow-hidden bg-canvas" style={{ cursor }} data-testid="editor-canvas" onMouseDown={blurFields}>
       {size.width > 0 && (
@@ -450,6 +481,59 @@ export function EditorCanvas({ template, cert, overriddenIds, individualMode }: 
                 </>
               )}
               {items.map(renderItem)}
+              {(template.guides ?? []).map((g) => {
+                const vertical = g.orientation === "v";
+                const far = 20000;
+                return (
+                  <Line
+                    key={g.id}
+                    name="guide"
+                    x={vertical ? g.pos : 0}
+                    y={vertical ? 0 : g.pos}
+                    points={vertical ? [0, -far, 0, far] : [-far, 0, far, 0]}
+                    stroke="#06b6d4"
+                    strokeWidth={1 / zoom}
+                    hitStrokeWidth={7 / zoom}
+                    listening={!guidesLocked && !spaceDown}
+                    draggable={!guidesLocked}
+                    dragBoundFunc={function (this: Konva.Node, pos) {
+                      // Arrasta só no eixo da guia (coordenadas absolutas do stage).
+                      const abs = this.getAbsolutePosition();
+                      return vertical ? { x: pos.x, y: abs.y } : { x: abs.x, y: pos.y };
+                    }}
+                    onMouseEnter={(e) => {
+                      const c = e.target.getStage()?.container();
+                      if (c) c.style.cursor = vertical ? "col-resize" : "row-resize";
+                    }}
+                    onMouseLeave={(e) => {
+                      const c = e.target.getStage()?.container();
+                      if (c) c.style.cursor = "";
+                    }}
+                    onMouseDown={(e) => (e.cancelBubble = true)}
+                    onDragMove={(e) => setDraggingGuide({ id: g.id, pos: vertical ? e.target.x() : e.target.y() })}
+                    onDragEnd={(e) => {
+                      setDraggingGuide(null);
+                      const pointer = e.target.getStage()?.getPointerPosition();
+                      const pos = vertical ? e.target.x() : e.target.y();
+                      // Soltar sobre a régua remove a guia.
+                      const overRuler = showRulers && pointer && (vertical ? pointer.x < RULER : pointer.y < RULER);
+                      if (overRuler) useWorkspace.getState().removeGuide(g.id);
+                      else useWorkspace.getState().moveGuide(g.id, Math.round(pos * 2) / 2);
+                    }}
+                    onDblClick={() => useWorkspace.getState().removeGuide(g.id)}
+                    data-testid="guide"
+                  />
+                );
+              })}
+              {pendingGuide && (
+                <Line
+                  points={pendingGuide.orientation === "v" ? [pendingGuide.pos, -20000, pendingGuide.pos, 20000] : [-20000, pendingGuide.pos, 20000, pendingGuide.pos]}
+                  stroke="#06b6d4"
+                  strokeWidth={1 / zoom}
+                  dash={[4 / zoom, 3 / zoom]}
+                  listening={false}
+                />
+              )}
               {guides.map((g, i) =>
                 g.orientation === "v" ? (
                   <Line key={i} points={[g.pos, -2000, g.pos, H + 2000]} stroke="#ec4899" strokeWidth={1 / zoom} listening={false} />
@@ -493,6 +577,18 @@ export function EditorCanvas({ template, cert, overriddenIds, individualMode }: 
             />
           </Layer>
         </Stage>
+      )}
+      {showRulers && size.width > 0 && (
+        <>
+          <Ruler orientation="h" length={size.width - RULER} origin={offset.x - RULER} zoom={zoom} highlight={selBox?.x} onStartGuide={startGuide("h")} />
+          <Ruler orientation="v" length={size.height - RULER} origin={offset.y - RULER} zoom={zoom} highlight={selBox?.y} onStartGuide={startGuide("v")} />
+          <div className="absolute left-0 top-0 z-10 size-5 border-b border-r border-border bg-[#f8f9fb]" />
+        </>
+      )}
+      {(pendingGuide || draggingGuide) && (
+        <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-md bg-gray-900 px-2 py-1 text-xs tabular-nums text-white shadow-pop" data-testid="guide-position">
+          {(ptToMm(pendingGuide?.pos ?? draggingGuide!.pos)).toFixed(1).replace(".", ",")} mm
+        </div>
       )}
     </div>
   );

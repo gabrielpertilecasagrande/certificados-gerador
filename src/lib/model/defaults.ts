@@ -43,7 +43,7 @@ export const DEFAULT_EXPORT: ExportSettings = {
 };
 
 export function createTemplate(name = "Modelo principal", page: PageSize = pageFromPreset("A4-landscape")): Template {
-  return { id: newId(), name, page, background: null, elements: [], marginPt: mmToPt(10) };
+  return { id: newId(), name, page, background: null, elements: [], marginPt: mmToPt(10), guides: [] };
 }
 
 export function createProject(name: string, template?: Template): Project {
@@ -62,6 +62,8 @@ export function createProject(name: string, template?: Template): Project {
     exportSettings: { ...DEFAULT_EXPORT },
     thumbnailAssetId: null,
     lastExportAt: null,
+    templateRules: [],
+    customFonts: [],
   };
 }
 

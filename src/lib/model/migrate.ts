@@ -12,5 +12,8 @@ export function migrateProject(raw: Project): Project {
     exportSettings: { ...DEFAULT_EXPORT, ...raw.exportSettings },
     lastExportAt: raw.lastExportAt ?? null,
     thumbnailAssetId: raw.thumbnailAssetId ?? null,
+    templates: (raw.templates ?? []).map((t) => ({ ...t, guides: t.guides ?? [] })),
+    templateRules: raw.templateRules ?? [],
+    customFonts: raw.customFonts ?? [],
   };
 }

@@ -10,6 +10,8 @@ interface ViewState {
   showGuides: boolean;
   snap: boolean;
   showBackground: boolean;
+  showRulers: boolean;
+  guidesLocked: boolean;
   set(patch: Partial<Omit<ViewState, "set" | "requestFit" | "zoomBy">>): void;
   requestFit(): void;
   zoomBy(factor: number): void;
@@ -25,6 +27,8 @@ export const useView = create<ViewState>()((set) => ({
   showGuides: true,
   snap: true,
   showBackground: true,
+  showRulers: true,
+  guidesLocked: false,
   set: (patch) => set(patch),
   requestFit: () => set((s) => ({ fitNonce: s.fitNonce + 1 })),
   zoomBy: (factor) => set((s) => ({ zoom: Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, s.zoom * factor)) })),

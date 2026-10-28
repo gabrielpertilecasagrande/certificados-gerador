@@ -97,6 +97,32 @@ export interface Template {
   background: Background | null;
   elements: Element[];
   marginPt: number;
+  /** Guias do editor (não são exportadas). */
+  guides: Guide[];
+}
+
+export interface Guide {
+  id: ID;
+  orientation: "v" | "h";
+  /** Posição em pt a partir da borda esquerda (v) ou superior (h). */
+  pos: number;
+}
+
+/** Regra de associação: participantes com `value` na coluna `columnId` usam o modelo `templateId`. */
+export interface TemplateRule {
+  columnId: ID;
+  value: string;
+  templateId: ID;
+}
+
+/** Fonte enviada pelo usuário (TTF/OTF), guardada como asset do projeto. */
+export interface CustomFont {
+  id: ID;
+  family: string;
+  weight: number;
+  italic: boolean;
+  assetId: ID;
+  fileName: string;
 }
 
 export interface Column {
@@ -157,6 +183,8 @@ export interface Project {
   exportSettings: ExportSettings;
   thumbnailAssetId: ID | null;
   lastExportAt: number | null;
+  templateRules: TemplateRule[];
+  customFonts: CustomFont[];
 }
 
 export interface ProjectSummary {
@@ -167,6 +195,23 @@ export interface ProjectSummary {
   status: ProjectStatus;
   participantCount: number;
   thumbnailAssetId: ID | null;
+}
+
+/** Cópia do layout do projeto (modelos e configurações), sem os participantes. */
+export interface VersionData {
+  templates: Template[];
+  globals: GlobalVariable[];
+  customFonts: CustomFont[];
+  templateRules: TemplateRule[];
+}
+
+export interface ProjectVersion {
+  id: ID;
+  projectId: ID;
+  createdAt: number;
+  label: string;
+  auto: boolean;
+  data: VersionData;
 }
 
 export interface AssetRecord {

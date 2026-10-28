@@ -11,6 +11,7 @@ import {
   Eraser,
   Eye,
   FileSpreadsheet,
+  LayoutTemplate,
   MoreVertical,
   PaintBucket,
   Pencil,
@@ -46,6 +47,7 @@ import { useWorkspace } from "@/features/workspace/store";
 import { useDiagnostics } from "@/features/workspace/use-diagnostics";
 import { BulkDialog, type BulkMode } from "./bulk-dialog";
 import { ImportDialog } from "./import-dialog";
+import { TemplateRulesDialog } from "./template-rules-dialog";
 
 const ROW_H = 36;
 const COL_W = 200;
@@ -61,6 +63,7 @@ export function ParticipantsView() {
   const diag = useDiagnostics();
 
   const [importOpen, setImportOpen] = useState(false);
+  const [rulesOpen, setRulesOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [sort, setSort] = useState<{ col: ID; dir: 1 | -1 } | null>(null);
@@ -167,6 +170,11 @@ export function ParticipantsView() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+          {project.templates.length > 1 && (
+            <Button size="sm" onClick={() => setRulesOpen(true)} data-testid="template-rules">
+              <LayoutTemplate /> Regras de modelo
+            </Button>
+          )}
           <Button
             size="sm"
             onClick={async () => {
@@ -266,6 +274,7 @@ export function ParticipantsView() {
       />
 
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} />
+      <TemplateRulesDialog open={rulesOpen} onOpenChange={setRulesOpen} />
       <BulkDialog
         mode={bulk?.mode ?? null}
         initialColumnId={bulk?.col}
@@ -297,8 +306,10 @@ function DataGrid({ columns, rows, selected, setSelected, sort, setSort, issues,
   const store = useWorkspace;
 
   const virt = useVirtualizer({ count: rows.length, getScrollElement: () => scrollRef.current, estimateSize: () => ROW_H, overscan: 12 });
-  const template = `44px 52px repeat(${Math.max(columns.length, 0)}, minmax(${COL_W}px, 1fr)) 44px`;
-  const minWidth = 44 + 52 + columns.length * COL_W + 44;
+  const templates = useWorkspace((s) => s.project?.templates ?? []);
+  const showTemplate = templates.length > 1;
+  const template = `44px 52px repeat(${Math.max(columns.length, 0)}, minmax(${COL_W}px, 1fr))${showTemplate ? " 170px" : ""} 44px`;
+  const minWidth = 44 + 52 + columns.length * COL_W + (showTemplate ? 170 : 0) + 44;
 
   const allSelected = rows.length > 0 && rows.every((r) => selected.has(r.p.id));
 
@@ -382,7 +393,7 @@ function DataGrid({ columns, rows, selected, setSelected, sort, setSort, issues,
       const row = rows[active.row + i];
       let p = row?.p;
       if (!p) {
-        p = { id: newId(), values: {}, templateId: s.project!.templates[0].id, overrides: {} };
+        p = { id: newId(), values: {}, templateId: (s.project!.templates.find((t) => t.id === s.activeTemplateId) ?? s.project!.templates[0]).id, overrides: {} };
         newRows.push(p);
       }
       line.forEach((v, j) => {
@@ -434,6 +445,7 @@ function DataGrid({ columns, rows, selected, setSelected, sort, setSort, issues,
           {columns.map((c) => (
             <ColumnHeader key={c.id} column={c} sort={sort?.col === c.id ? sort.dir : 0} setSort={setSort} onTool={onColumnTool} />
           ))}
+          {showTemplate && <div className="flex items-center border-r border-border px-2 text-foreground">Modelo</div>}
           <div className="flex items-center justify-center" title="Situação">
             <CircleCheck className="size-3.5" />
           </div>
@@ -498,6 +510,22 @@ function DataGrid({ columns, rows, selected, setSelected, sort, setSort, issues,
                     </div>
                   );
                 })}
+                {showTemplate && (
+                  <div className="flex items-center border-r border-border px-1">
+                    <select
+                      className="h-7 w-full cursor-pointer rounded border-transparent bg-transparent px-1 text-[13px] hover:bg-surface-2 focus:outline-primary"
+                      value={p.templateId}
+                      onChange={(e) => store.getState().assignTemplate([p.id], e.target.value)}
+                      aria-label={`Modelo da linha ${index + 1}`}
+                    >
+                      {templates.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div className="flex items-center justify-center">
                   {rowIssues ? (
                     <Tip label={<span className="block max-w-64">{rowIssues.map((i) => i.message).join(" · ")}</span>} side="left">

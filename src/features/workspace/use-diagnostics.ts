@@ -24,7 +24,7 @@ const EMPTY: Diagnostics = { byParticipant: new Map(), duplicates: new Set(), er
 const cache = new WeakMap<Project, Diagnostics>();
 
 async function compute(project: Project, onProgress: (d: Diagnostics) => void, isCancelled: () => boolean): Promise<Diagnostics | null> {
-  await ensureFonts(fontFilesForTemplates(project.templates));
+  await ensureFonts(fontFilesForTemplates(project.templates, project.customFonts));
   const byParticipant = new Map<ID, Issue[]>();
   const nameCol = findNameColumn(project.columns);
   const v = validateParticipants(project.participants, project.columns, nameCol?.id);
@@ -32,6 +32,9 @@ async function compute(project: Project, onProgress: (d: Diagnostics) => void, i
   const templateIssues: Issue[] = [];
   for (const t of project.templates) {
     if (!t.background) templateIssues.push({ code: "no-background", severity: "warning", message: `"${t.name}" não tem arte de fundo` });
+    if (project.templates.length > 1 && !project.participants.some((p) => p.templateId === t.id)) {
+      templateIssues.push({ code: "no-background", severity: "warning", message: `Nenhum participante usa o modelo "${t.name}"` });
+    }
   }
   let errorCount = 0;
   let warningCount = 0;

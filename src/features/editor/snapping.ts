@@ -25,6 +25,7 @@ export function snapBox(box: Box, template: Template, others: Element[], thresho
   const m = template.marginPt;
   const vTargets = [0, W / 2, W, m, W - m];
   const hTargets = [0, H / 2, H, m, H - m];
+  for (const g of template.guides ?? []) (g.orientation === "v" ? vTargets : hTargets).push(g.pos);
   for (const o of others) {
     if (o.hidden || o.rotation % 360 !== 0) continue;
     vTargets.push(o.x, o.x + o.width / 2, o.x + o.width);

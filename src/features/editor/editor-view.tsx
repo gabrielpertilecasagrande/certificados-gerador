@@ -9,6 +9,7 @@ import { ParticipantNav } from "@/features/workspace/participant-nav";
 import { useActiveParticipant, useActiveTemplate, useWorkspace } from "@/features/workspace/store";
 import { cn } from "@/lib/utils/cn";
 import { CanvasContextMenu } from "./canvas-context-menu";
+import { FontUploadDialog } from "./custom-fonts";
 import { EditorCanvas } from "./editor-canvas";
 import { LeftPanel } from "./left-panel";
 import { PropertiesPanel } from "./properties-panel";
@@ -51,7 +52,11 @@ export function EditorView() {
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-border bg-surface px-3 py-2">
           {project.participants.length > 0 ? (
             <>
-              <ParticipantNav />
+              {project.templates.length > 1 && !project.participants.some((p) => p.templateId === template.id) ? (
+                <span className="text-[13px] text-muted">Nenhum participante usa este modelo — exibindo dados do participante atual.</span>
+              ) : (
+                <ParticipantNav templateId={project.templates.length > 1 ? template.id : undefined} />
+              )}
               <label className="flex items-center gap-2 text-[13px]">
                 <Switch
                   checked={individualMode}
@@ -86,6 +91,7 @@ export function EditorView() {
         </div>
       </section>
 
+      <FontUploadDialog />
       <aside className="hidden w-72 shrink-0 overflow-y-auto border-l border-border bg-surface scrollbar-thin lg:block" data-testid="properties-panel">
         <PropertiesPanel issues={cert?.issues ?? []} />
       </aside>

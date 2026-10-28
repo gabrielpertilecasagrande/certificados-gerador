@@ -186,7 +186,7 @@ function SinglePreview() {
   const template = templateFor(project, participant);
   const cert = useMemo(() => {
     void fontsVersion;
-    if (!fontsReadyFor(template)) return null;
+    if (!fontsReadyFor(template, project.customFonts)) return null;
     return resolveCertificate(project, participant, browserFonts, { template });
   }, [project, participant, template, fontsVersion]);
 
@@ -234,7 +234,8 @@ function Gallery({ participants, onOpen }: { participants: Participant[]; onOpen
   const nameCol = findNameColumn(project.columns);
   const cols = Math.max(1, Math.floor((size.width - 24) / 280));
   const cardW = Math.floor((size.width - 24 - (cols - 1) * 16) / cols);
-  const ratio = project.templates[0].page.heightPt / project.templates[0].page.widthPt;
+  // Cartões com a altura do modelo mais "alto" (modelos podem ter formatos diferentes).
+  const ratio = Math.max(...project.templates.map((t) => t.page.heightPt / t.page.widthPt));
   const rowH = Math.round(cardW * ratio) + 56;
   const rowCount = Math.ceil(participants.length / cols);
   const virt = useVirtualizer({ count: rowCount, getScrollElement: () => ref.current, estimateSize: () => rowH, overscan: 2 });
@@ -273,7 +274,7 @@ function GalleryThumb({ participant, width, fontsVersion }: { participant: Parti
   const template = templateFor(project, participant);
   const cert = useMemo(() => {
     void fontsVersion;
-    if (!fontsReadyFor(template)) return null;
+    if (!fontsReadyFor(template, project.customFonts)) return null;
     return resolveCertificate(project, participant, browserFonts, { template });
   }, [project, participant, template, fontsVersion]);
   return <CertificateCanvas cert={cert} width={width} />;

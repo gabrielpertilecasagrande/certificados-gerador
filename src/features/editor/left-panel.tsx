@@ -35,6 +35,8 @@ import { DERIVED_KEYS, knownVariables, PRESET_VARIABLES, slugify, uniqueKey } fr
 import { useActiveTemplate, useWorkspace } from "@/features/workspace/store";
 import { blurFields } from "./editor-canvas";
 import { importImageAsset } from "./insert-assets";
+import { CustomFontsSection } from "./custom-fonts";
+import { TemplateSwitcher } from "./template-switcher";
 
 type Tab = "insert" | "layers" | "data";
 
@@ -54,6 +56,7 @@ export function LeftPanel() {
   if (!template) return null;
   return (
     <div className="flex h-full flex-col">
+      <TemplateSwitcher />
       <div className="grid grid-cols-3 gap-1 border-b border-border p-2" role="tablist">
         {(
           [
@@ -524,6 +527,9 @@ function GlobalsTab() {
           ))}
         </div>
       )}
+      <div className="border-t border-border pt-4">
+        <CustomFontsSection />
+      </div>
     </div>
   );
 }

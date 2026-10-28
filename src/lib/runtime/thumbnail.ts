@@ -14,7 +14,7 @@ export async function renderThumbnail(project: Project): Promise<Blob | null> {
   const participant = project.participants[0] ?? null;
   const template = project.templates.find((t) => t.id === participant?.templateId) ?? project.templates[0];
   if (!template) return null;
-  await ensureFonts(fontFilesForTemplates([template]));
+  await ensureFonts(fontFilesForTemplates([template], project.customFonts));
   const cert = resolveCertificate(project, participant, browserFonts, { template });
   const scale = THUMB_WIDTH / template.page.widthPt;
   const canvas = document.createElement("canvas");

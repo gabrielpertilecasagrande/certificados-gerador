@@ -8,7 +8,7 @@ import type {
 } from "@/lib/model/types";
 import { buildContext, renderContent, variablesIn, type VariableContext } from "@/lib/variables";
 import { layoutText, type LayoutResult } from "./layout";
-import { resolveFontVariant, type FontStore } from "./fonts";
+import { familyAvailable, resolveFontVariant, type FontStore, type ProjectFont } from "./fonts";
 
 export type IssueCode =
   | "overflow"
@@ -55,13 +55,13 @@ export function applyOverride<T extends Element>(el: T, ov: ElementOverride | un
   return { ...el, ...geo } as T;
 }
 
-export function fontFileFor(el: Pick<TextElement, "fontFamily" | "fontWeight" | "italic">): string {
-  return resolveFontVariant(el.fontFamily, el.fontWeight, el.italic).file;
+export function fontFileFor(el: Pick<TextElement, "fontFamily" | "fontWeight" | "italic">, custom: readonly ProjectFont[] = []): string {
+  return resolveFontVariant(el.fontFamily, el.fontWeight, el.italic, custom).file;
 }
 
-export function fontFilesForTemplates(templates: Template[]): string[] {
+export function fontFilesForTemplates(templates: Template[], custom: readonly ProjectFont[] = []): string[] {
   const files = new Set<string>();
-  for (const t of templates) for (const el of t.elements) if (el.type === "text") files.add(fontFileFor(el));
+  for (const t of templates) for (const el of t.elements) if (el.type === "text") files.add(fontFileFor(el, custom));
   return [...files];
 }
 
@@ -127,7 +127,11 @@ export function resolveCertificate(
         issues.push({ code: "empty-var", severity: "warning", elementId: el.id, message: `Campo {{${key}}} vazio` });
       }
     }
-    const fontFile = fontFileFor(el);
+    const custom = project.customFonts ?? [];
+    if (!familyAvailable(el.fontFamily, custom)) {
+      issues.push({ code: "font-error", severity: "warning", elementId: el.id, message: `Fonte "${el.fontFamily}" indisponível — usando a padrão` });
+    }
+    const fontFile = fontFileFor(el, custom);
     let layout: LayoutResult;
     try {
       layout = layoutText({

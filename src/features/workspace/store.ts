@@ -6,7 +6,9 @@ import { temporal } from "zundo";
 import type {
   Background,
   Column,
+  CustomFont,
   Element,
+  Guide,
   ElementOverride,
   ExportSettings,
   GlobalVariable,
@@ -15,7 +17,9 @@ import type {
   Participant,
   Project,
   Template,
+  TemplateRule,
 } from "@/lib/model/types";
+import { templateAssignments } from "@/lib/participants/templates";
 import { newId } from "@/lib/utils/id";
 import { slugify, uniqueKey } from "@/lib/variables";
 
@@ -93,6 +97,22 @@ interface Actions {
   deleteParticipants(ids: ID[]): void;
   duplicateParticipants(ids: ID[]): void;
   assignTemplate(ids: ID[], templateId: ID): void;
+
+  addTemplate(template: Template): void;
+  duplicateTemplate(id: ID): ID;
+  renameTemplate(id: ID, name: string): void;
+  deleteTemplate(id: ID): void;
+  setTemplateRules(rules: TemplateRule[]): void;
+  /** Reaplica as regras (todos os participantes ou só `ids`); retorna quantos mudaram. */
+  applyTemplateRules(ids?: ID[]): number;
+
+  addGuide(guide: Omit<Guide, "id">): ID;
+  moveGuide(id: ID, pos: number): void;
+  removeGuide(id: ID): void;
+  clearGuides(): void;
+
+  addCustomFont(font: CustomFont): void;
+  removeCustomFont(id: ID): void;
 
   setOverride(participantId: ID, elementId: ID, patch: ElementOverride): void;
   clearOverrides(participantId: ID, elementId?: ID): void;
@@ -321,19 +341,25 @@ export const useWorkspace = create<WorkspaceStore>()(
           });
         },
         addParticipants(list, columns, replace = false) {
+          const project = get().project;
+          // Participantes novos seguem as regras de modelo (ex.: por categoria), no mesmo passo de desfazer.
+          const assigned = project
+            ? new Map(templateAssignments({ ...project, participants: list }).map((a) => [a.participantId, a.templateId]))
+            : new Map<ID, ID>();
+          const withTemplates = assigned.size ? list.map((p) => (assigned.has(p.id) ? { ...p, templateId: assigned.get(p.id)! } : p)) : list;
           mutate((d) => {
             if (columns) d.columns = columns;
-            d.participants = replace ? list : [...d.participants, ...list];
+            d.participants = replace ? withTemplates : [...d.participants, ...withTemplates];
           });
-          const { activeParticipantId, project } = get();
-          if (!project?.participants.some((p) => p.id === activeParticipantId)) {
-            set({ activeParticipantId: project?.participants[0]?.id ?? null });
+          const after = get();
+          if (!after.project?.participants.some((p) => p.id === after.activeParticipantId)) {
+            set({ activeParticipantId: after.project?.participants[0]?.id ?? null });
           }
         },
         addEmptyParticipant() {
           const id = newId();
           mutate((d) => {
-            d.participants.push({ id, values: {}, templateId: d.templates[0].id, overrides: {} });
+            d.participants.push({ id, values: {}, templateId: activeTemplate(d, get().activeTemplateId).id, overrides: {} });
           });
           return id;
         },
@@ -374,6 +400,103 @@ export const useWorkspace = create<WorkspaceStore>()(
           const s = new Set(ids);
           mutate((d) => {
             for (const p of d.participants) if (s.has(p.id)) p.templateId = templateId;
+          });
+        },
+
+        addTemplate(template) {
+          mutate((d) => {
+            d.templates.push(template as Draft<Template>);
+          });
+          set({ activeTemplateId: template.id, selectedIds: [] });
+        },
+        duplicateTemplate(id) {
+          const newTemplateId = newId();
+          mutate((d) => {
+            const src = d.templates.find((t) => t.id === id);
+            if (!src) return;
+            const copy = structuredClone(current(src));
+            const groups = new Map<ID, ID>();
+            copy.id = newTemplateId;
+            copy.name = `${src.name} (cópia)`;
+            copy.elements = copy.elements.map((e) => {
+              const groupId = e.groupId ? (groups.get(e.groupId) ?? groups.set(e.groupId, newId()).get(e.groupId)) : undefined;
+              return { ...e, id: newId(), groupId };
+            });
+            copy.guides = (copy.guides ?? []).map((g) => ({ ...g, id: newId() }));
+            d.templates.push(copy as Draft<Template>);
+          });
+          set({ activeTemplateId: newTemplateId, selectedIds: [] });
+          return newTemplateId;
+        },
+        renameTemplate(id, name) {
+          mutate((d) => {
+            const t = d.templates.find((x) => x.id === id);
+            if (t && name.trim()) t.name = name.trim();
+          });
+        },
+        deleteTemplate(id) {
+          const project = get().project;
+          if (!project || project.templates.length <= 1) return;
+          mutate((d) => {
+            d.templates = d.templates.filter((t) => t.id !== id);
+            const fallback = d.templates[0].id;
+            for (const p of d.participants) if (p.templateId === id) p.templateId = fallback;
+            d.templateRules = d.templateRules.filter((r) => r.templateId !== id);
+          });
+          if (get().activeTemplateId === id) set({ activeTemplateId: get().project!.templates[0].id, selectedIds: [] });
+        },
+        setTemplateRules(rules) {
+          mutate((d) => {
+            d.templateRules = rules;
+          });
+        },
+        applyTemplateRules(ids) {
+          const project = get().project;
+          if (!project) return 0;
+          const changes = templateAssignments(project, ids);
+          if (!changes.length) return 0;
+          const byId = new Map(changes.map((c) => [c.participantId, c.templateId]));
+          mutate((d) => {
+            for (const p of d.participants) {
+              const t = byId.get(p.id);
+              if (t) p.templateId = t;
+            }
+          });
+          return changes.length;
+        },
+
+        addGuide(guide) {
+          const id = newId();
+          updateTemplate((t) => {
+            t.guides.push({ ...guide, id });
+          });
+          return id;
+        },
+        moveGuide(id, pos) {
+          updateTemplate((t) => {
+            const g = t.guides.find((x) => x.id === id);
+            if (g) g.pos = pos;
+          });
+        },
+        removeGuide(id) {
+          updateTemplate((t) => {
+            t.guides = t.guides.filter((g) => g.id !== id);
+          });
+        },
+        clearGuides() {
+          updateTemplate((t) => {
+            t.guides = [];
+          });
+        },
+
+        addCustomFont(font) {
+          mutate((d) => {
+            d.customFonts.push(font);
+          });
+        },
+        removeCustomFont(id) {
+          mutate((d) => {
+            d.customFonts = d.customFonts.filter((f) => f.id !== id);
           });
         },
 
@@ -418,6 +541,7 @@ function revalidateUi() {
   const elementIds = new Set(template?.elements.map((e) => e.id));
   const participantIds = new Set(p.participants.map((x) => x.id));
   const patch: Partial<UiState> = {};
+  if (template.id !== s.activeTemplateId) patch.activeTemplateId = template.id;
   if (s.selectedIds.some((id) => !elementIds.has(id))) patch.selectedIds = s.selectedIds.filter((id) => elementIds.has(id));
   if (s.activeParticipantId && !participantIds.has(s.activeParticipantId)) {
     patch.activeParticipantId = p.participants[0]?.id ?? null;

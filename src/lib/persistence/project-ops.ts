@@ -77,6 +77,7 @@ function remapAssets(project: Project, map: Map<ID, ID>): Project {
     for (const el of t.elements) if (el.type === "image") el.assetId = m(el.assetId);
   }
   if (p.thumbnailAssetId) p.thumbnailAssetId = m(p.thumbnailAssetId);
+  p.customFonts = (p.customFonts ?? []).map((f) => ({ ...f, assetId: m(f.assetId) }));
   return p;
 }
 

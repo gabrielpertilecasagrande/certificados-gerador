@@ -9,7 +9,8 @@ import { useWorkspace } from "./store";
 /** Garante que todas as fontes usadas nos modelos estejam carregadas; retorna uma versão que muda ao carregar. */
 export function useFontsVersion(): number {
   const templates = useWorkspace((s) => s.project?.templates);
-  const key = useMemo(() => (templates ? fontFilesForTemplates(templates).sort().join("|") : ""), [templates]);
+  const custom = useWorkspace((s) => s.project?.customFonts);
+  const key = useMemo(() => (templates ? fontFilesForTemplates(templates, custom).sort().join("|") : ""), [templates, custom]);
   const [version, setVersion] = useState(0);
   useEffect(() => {
     if (!key) return;
@@ -26,9 +27,9 @@ export function useFontsVersion(): number {
   return version;
 }
 
-export function fontsReadyFor(template: Template | null): boolean {
+export function fontsReadyFor(template: Template | null, custom: Project["customFonts"] = []): boolean {
   if (!template) return false;
-  return template.elements.every((el) => el.type !== "text" || browserFonts.has(fontFileFor(el)));
+  return template.elements.every((el) => el.type !== "text" || browserFonts.has(fontFileFor(el, custom)));
 }
 
 export function useResolved(
@@ -39,7 +40,7 @@ export function useResolved(
 ): ResolvedCertificate | null {
   return useMemo(() => {
     void fontsVersion;
-    if (!project || !template || !fontsReadyFor(template)) return null;
+    if (!project || !template || !fontsReadyFor(template, project.customFonts)) return null;
     return resolveCertificate(project, participant, browserFonts, { template, includeHidden: false });
   }, [project, participant, template, fontsVersion]);
 }

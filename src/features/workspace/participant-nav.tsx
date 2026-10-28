@@ -8,14 +8,17 @@ import { cn } from "@/lib/utils/cn";
 import { useWorkspace } from "./store";
 
 /** Navegação entre participantes: anterior/próximo, busca e "Certificado N de M". */
-export function ParticipantNav({ className }: { className?: string }) {
+export function ParticipantNav({ className, templateId }: { className?: string; /** Restringe aos participantes deste modelo. */ templateId?: string }) {
   const project = useWorkspace((s) => s.project);
   const activeId = useWorkspace((s) => s.activeParticipantId);
   const setUi = useWorkspace((s) => s.setUi);
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
 
-  const participants = useMemo(() => project?.participants ?? [], [project?.participants]);
+  const participants = useMemo(
+    () => (templateId ? (project?.participants ?? []).filter((p) => p.templateId === templateId) : (project?.participants ?? [])),
+    [project?.participants, templateId],
+  );
   const nameCol = project ? findNameColumn(project.columns) : undefined;
   const index = participants.findIndex((p) => p.id === activeId);
   const label = (i: number) => {

@@ -106,7 +106,7 @@ export function runExport(req: ExportRequest, onProgress: (p: ExportProgress) =>
 
     try {
       emit({ status: "preparing", message: "Preparando fontes e arquivos…" });
-      const fontFiles = fontFilesForTemplates(project.templates);
+      const fontFiles = fontFilesForTemplates(project.templates, project.customFonts);
       await ensureFonts(fontFiles);
       if (cancelled) return finishCancelled();
 
@@ -152,7 +152,7 @@ export function runExport(req: ExportRequest, onProgress: (p: ExportProgress) =>
       const assets: WorkerStart["assets"] = {};
       for (const id of assetIds) assets[id] = await getAssetBytes(id);
       const fonts: WorkerStart["fonts"] = {};
-      for (const f of fontFilesForTemplates(project.templates)) fonts[f] = browserFonts.getBytes(f).slice();
+      for (const f of fontFilesForTemplates(project.templates, project.customFonts)) fonts[f] = browserFonts.getBytes(f).slice();
       if (cancelled) return;
 
       emit({ status: "running", message: undefined });

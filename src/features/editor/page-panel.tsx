@@ -100,6 +100,18 @@ export function PagePanel({ template }: { template: Template }) {
         <label className="flex items-center justify-between text-[13px]">
           Encaixe magnético <Switch checked={view.snap} onCheckedChange={(v) => view.set({ snap: v })} />
         </label>
+        <label className="flex items-center justify-between text-[13px]">
+          Réguas (mm) <Switch checked={view.showRulers} onCheckedChange={(v) => view.set({ showRulers: v })} />
+        </label>
+        <label className="flex items-center justify-between text-[13px]">
+          Bloquear guias <Switch checked={view.guidesLocked} onCheckedChange={(v) => view.set({ guidesLocked: v })} />
+        </label>
+        <p className="text-xs text-muted">Arraste a partir de uma régua para criar uma guia; arraste-a de volta (ou dê duplo clique) para removê-la.</p>
+        {(template.guides ?? []).length > 0 && (
+          <Button size="sm" onClick={() => useWorkspace.getState().clearGuides()}>
+            Remover {template.guides.length} guia(s)
+          </Button>
+        )}
       </Section>
 
       <ReplaceBackgroundDialog open={replacing} onOpenChange={setReplacing} onPicked={(art, page, keepPage) => applyArtwork(art, page, keepPage)} />

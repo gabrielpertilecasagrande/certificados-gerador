@@ -38,13 +38,14 @@ import {
 } from "@/components/ui/menu";
 import { Badge, Segmented, Tip } from "@/components/ui/misc";
 import type { Element, ElementOverride, ImageElement, ShapeElement, TextElement, TextFit } from "@/lib/model/types";
-import { FONT_CATEGORIES, FONT_FAMILIES, hasItalic, resolveFontVariant, weightsFor } from "@/lib/render/fonts";
+import { FONT_CATEGORIES, FONT_FAMILIES, familyAvailable, hasItalic, resolveFontVariant, weightsFor } from "@/lib/render/fonts";
 import { applyOverride } from "@/lib/render/resolve";
 import type { Issue } from "@/lib/render/resolve";
 import { round, ptToMm, mmToPt } from "@/lib/utils/units";
 import { knownVariables, variablesIn } from "@/lib/variables";
 import { useActiveParticipant, useActiveTemplate, useWorkspace } from "@/features/workspace/store";
 import { alignPatches, distributePatches, type AlignKind } from "./align";
+import { requestFontUpload } from "./custom-fonts";
 import { PagePanel } from "./page-panel";
 import { ColorInput, Row, Section } from "./panel-ui";
 
@@ -226,8 +227,10 @@ function TextSections({ el }: { el: TextElement }) {
   const project = useWorkspace((s) => s.project);
   const participant = useActiveParticipant();
   const updateCell = useWorkspace((s) => s.updateCell);
-  const weights = weightsFor(el.fontFamily);
-  const italicOk = hasItalic(el.fontFamily);
+  const customFonts = project?.customFonts ?? [];
+  const weights = weightsFor(el.fontFamily, customFonts);
+  const italicOk = hasItalic(el.fontFamily, customFonts);
+  const customFamilies = [...new Set(customFonts.map((f) => f.family))];
   const fit = el.fit;
   const setFit = (patch: Partial<TextFit>) => edit({ fit: { ...fit, ...patch } });
 
@@ -290,11 +293,21 @@ function TextSections({ el }: { el: TextElement }) {
           disabled={lockedInIndividual("fontFamily")}
           onChange={(e) => {
             const family = e.target.value;
-            const v = resolveFontVariant(family, el.fontWeight, el.italic);
+            if (family === "__add") return requestFontUpload();
+            const v = resolveFontVariant(family, el.fontWeight, el.italic, customFonts);
             edit({ fontFamily: family, fontWeight: v.weight, italic: v.italic });
           }}
           aria-label="Fonte"
         >
+          {!familyAvailable(el.fontFamily, customFonts) && <option value={el.fontFamily}>{el.fontFamily} (indisponível)</option>}
+          <optgroup label="Fontes do projeto">
+            {customFamilies.map((f) => (
+              <option key={f} value={f}>
+                {f}
+              </option>
+            ))}
+            <option value="__add">+ Adicionar fonte…</option>
+          </optgroup>
           {(["sans", "serif", "display", "script"] as const).map((cat) => (
             <optgroup key={cat} label={{ sans: "Sem serifa", serif: "Serifadas", display: "Títulos", script: "Manuscritas" }[cat]}>
               {FONT_FAMILIES.filter((f) => (FONT_CATEGORIES[f] ?? "sans") === cat).map((f) => (
