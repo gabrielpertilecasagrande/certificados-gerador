@@ -38,6 +38,16 @@ import { importImageAsset } from "./insert-assets";
 
 type Tab = "insert" | "layers" | "data";
 
+/** Primeira posição vertical (a partir de `preferredY`) em que a caixa não sobrepõe elementos visíveis. */
+function freeY(template: Template, el: { x: number; width: number; height: number }, preferredY: number): number {
+  const overlaps = (y: number) =>
+    template.elements.some((o) => !o.hidden && o.x < el.x + el.width && o.x + o.width > el.x && o.y < y + el.height && o.y + Math.max(o.height, 1) > y);
+  const maxY = template.page.heightPt - el.height - template.marginPt;
+  for (let y = preferredY; y <= maxY; y += 6) if (!overlaps(y)) return y;
+  for (let y = preferredY; y >= template.marginPt; y -= 6) if (!overlaps(y)) return y;
+  return preferredY;
+}
+
 export function LeftPanel() {
   const [tab, setTab] = useState<Tab>("insert");
   const template = useActiveTemplate();
@@ -120,7 +130,6 @@ function InsertTab({ template }: { template: Template }) {
       else ensureColumn(key, label);
     }
     const isName = key === "nome" || key === "nome_completo";
-    const n = template.elements.filter((e) => e.type === "text").length;
     const el = createTextElement(template.page, {
       name: label,
       content: `{{${key}}}`,
@@ -132,8 +141,8 @@ function InsertTab({ template }: { template: Template }) {
     if (!isName) {
       el.width = Math.min(el.width, mmToPt(120));
       el.x = (template.page.widthPt - el.width) / 2;
-      el.y = Math.min(template.page.heightPt - el.height - 10, template.page.heightPt / 2 + 40 + (n % 5) * 30);
     }
+    el.y = freeY(template, el, isName ? el.y : template.page.heightPt / 2 + 40);
     addElement(el);
   };
 
@@ -205,6 +214,7 @@ function InsertTab({ template }: { template: Template }) {
                 height: 90,
                 fit: { mode: "wrap", minSize: 10, maxSize: 15, maxLines: 5 },
               });
+              el.y = freeY(template, el, template.page.heightPt * 0.55);
               // Dados normalmente iguais para todos viram "dados fixos" (a planilha pode sobrescrever).
               const current = useWorkspace.getState().project!;
               const missing = ([["evento", "Evento"], ["data", "Data"], ["carga_horaria", "Carga horária"]] as const).filter(

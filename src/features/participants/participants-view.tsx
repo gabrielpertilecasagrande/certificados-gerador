@@ -96,7 +96,7 @@ export function ParticipantsView() {
     if (ok) store.getState().deleteParticipants(selectedIds);
   };
 
-  if (project.participants.length === 0 && columns.length === 0) {
+  if (project.participants.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center p-6">
         <div className="flex max-w-md flex-col items-center text-center">
