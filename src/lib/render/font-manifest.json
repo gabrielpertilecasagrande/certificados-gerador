@@ -1,0 +1,242 @@
+[
+  {
+    "family": "Inter",
+    "weight": 400,
+    "italic": true,
+    "file": "Inter-400i.ttf"
+  },
+  {
+    "family": "Inter",
+    "weight": 700,
+    "italic": true,
+    "file": "Inter-700i.ttf"
+  },
+  {
+    "family": "Inter",
+    "weight": 400,
+    "italic": false,
+    "file": "Inter-400.ttf"
+  },
+  {
+    "family": "Inter",
+    "weight": 600,
+    "italic": false,
+    "file": "Inter-600.ttf"
+  },
+  {
+    "family": "Inter",
+    "weight": 700,
+    "italic": false,
+    "file": "Inter-700.ttf"
+  },
+  {
+    "family": "Montserrat",
+    "weight": 400,
+    "italic": true,
+    "file": "Montserrat-400i.ttf"
+  },
+  {
+    "family": "Montserrat",
+    "weight": 700,
+    "italic": true,
+    "file": "Montserrat-700i.ttf"
+  },
+  {
+    "family": "Montserrat",
+    "weight": 400,
+    "italic": false,
+    "file": "Montserrat-400.ttf"
+  },
+  {
+    "family": "Montserrat",
+    "weight": 600,
+    "italic": false,
+    "file": "Montserrat-600.ttf"
+  },
+  {
+    "family": "Montserrat",
+    "weight": 700,
+    "italic": false,
+    "file": "Montserrat-700.ttf"
+  },
+  {
+    "family": "Poppins",
+    "weight": 400,
+    "italic": true,
+    "file": "Poppins-400i.ttf"
+  },
+  {
+    "family": "Poppins",
+    "weight": 700,
+    "italic": true,
+    "file": "Poppins-700i.ttf"
+  },
+  {
+    "family": "Poppins",
+    "weight": 400,
+    "italic": false,
+    "file": "Poppins-400.ttf"
+  },
+  {
+    "family": "Poppins",
+    "weight": 600,
+    "italic": false,
+    "file": "Poppins-600.ttf"
+  },
+  {
+    "family": "Poppins",
+    "weight": 700,
+    "italic": false,
+    "file": "Poppins-700.ttf"
+  },
+  {
+    "family": "Raleway",
+    "weight": 400,
+    "italic": true,
+    "file": "Raleway-400i.ttf"
+  },
+  {
+    "family": "Raleway",
+    "weight": 700,
+    "italic": true,
+    "file": "Raleway-700i.ttf"
+  },
+  {
+    "family": "Raleway",
+    "weight": 400,
+    "italic": false,
+    "file": "Raleway-400.ttf"
+  },
+  {
+    "family": "Raleway",
+    "weight": 700,
+    "italic": false,
+    "file": "Raleway-700.ttf"
+  },
+  {
+    "family": "Oswald",
+    "weight": 400,
+    "italic": false,
+    "file": "Oswald-400.ttf"
+  },
+  {
+    "family": "Oswald",
+    "weight": 600,
+    "italic": false,
+    "file": "Oswald-600.ttf"
+  },
+  {
+    "family": "Oswald",
+    "weight": 700,
+    "italic": false,
+    "file": "Oswald-700.ttf"
+  },
+  {
+    "family": "Lora",
+    "weight": 400,
+    "italic": true,
+    "file": "Lora-400i.ttf"
+  },
+  {
+    "family": "Lora",
+    "weight": 700,
+    "italic": true,
+    "file": "Lora-700i.ttf"
+  },
+  {
+    "family": "Lora",
+    "weight": 400,
+    "italic": false,
+    "file": "Lora-400.ttf"
+  },
+  {
+    "family": "Lora",
+    "weight": 700,
+    "italic": false,
+    "file": "Lora-700.ttf"
+  },
+  {
+    "family": "Playfair Display",
+    "weight": 400,
+    "italic": true,
+    "file": "PlayfairDisplay-400i.ttf"
+  },
+  {
+    "family": "Playfair Display",
+    "weight": 700,
+    "italic": true,
+    "file": "PlayfairDisplay-700i.ttf"
+  },
+  {
+    "family": "Playfair Display",
+    "weight": 400,
+    "italic": false,
+    "file": "PlayfairDisplay-400.ttf"
+  },
+  {
+    "family": "Playfair Display",
+    "weight": 700,
+    "italic": false,
+    "file": "PlayfairDisplay-700.ttf"
+  },
+  {
+    "family": "EB Garamond",
+    "weight": 400,
+    "italic": true,
+    "file": "EBGaramond-400i.ttf"
+  },
+  {
+    "family": "EB Garamond",
+    "weight": 700,
+    "italic": true,
+    "file": "EBGaramond-700i.ttf"
+  },
+  {
+    "family": "EB Garamond",
+    "weight": 400,
+    "italic": false,
+    "file": "EBGaramond-400.ttf"
+  },
+  {
+    "family": "EB Garamond",
+    "weight": 700,
+    "italic": false,
+    "file": "EBGaramond-700.ttf"
+  },
+  {
+    "family": "Cinzel",
+    "weight": 400,
+    "italic": false,
+    "file": "Cinzel-400.ttf"
+  },
+  {
+    "family": "Cinzel",
+    "weight": 700,
+    "italic": false,
+    "file": "Cinzel-700.ttf"
+  },
+  {
+    "family": "Great Vibes",
+    "weight": 400,
+    "italic": false,
+    "file": "GreatVibes-400.ttf"
+  },
+  {
+    "family": "Dancing Script",
+    "weight": 400,
+    "italic": false,
+    "file": "DancingScript-400.ttf"
+  },
+  {
+    "family": "Dancing Script",
+    "weight": 700,
+    "italic": false,
+    "file": "DancingScript-700.ttf"
+  },
+  {
+    "family": "Pinyon Script",
+    "weight": 400,
+    "italic": false,
+    "file": "PinyonScript-400.ttf"
+  }
+]
