@@ -49,6 +49,8 @@ export class StreamingZip {
   private error: Error | null = null;
   private finished: Promise<void>;
   private pending: Promise<void> = Promise.resolve();
+  private entries = 0;
+  private bytes = 0;
 
   constructor(private readonly sink: ByteSink) {
     let resolve!: () => void;
@@ -71,6 +73,12 @@ export class StreamingZip {
   /** PDFs/PNGs/JPGs já são comprimidos: armazenar sem recompressão é mais rápido. */
   add(path: string, data: Uint8Array, compress = false) {
     if (this.error) throw this.error;
+    // O formato ZIP clássico (sem ZIP64) não comporta mais de 65.535 arquivos nem 4 GB.
+    this.entries++;
+    this.bytes += data.length + path.length + 100;
+    if (this.entries > 65_000 || this.bytes > 3.9 * 1024 ** 3) {
+      throw new Error("O ZIP ultrapassaria 4 GB ou 65 mil arquivos. Exporte em partes (ex.: por seleção) ou use PDF/JPG em menor resolução.");
+    }
     const file = compress ? new ZipDeflate(path, { level: 6 }) : new ZipPassThrough(path);
     this.zip.add(file);
     file.push(data, true);

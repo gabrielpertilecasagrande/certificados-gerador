@@ -17,6 +17,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Conta a tentativa antes de qualquer await: requisições paralelas não escapam do limite.
+  registerFailure(key);
+
   let password = "";
   try {
     const body = (await req.json()) as { password?: unknown };
@@ -34,7 +37,6 @@ export async function POST(req: NextRequest) {
   }
 
   if (!ok) {
-    registerFailure(key);
     return NextResponse.json({ error: "Senha incorreta" }, { status: 401 });
   }
 

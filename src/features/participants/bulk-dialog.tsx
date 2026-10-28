@@ -8,7 +8,7 @@ import { Input, Label, Select } from "@/components/ui/input";
 import { Segmented } from "@/components/ui/misc";
 import type { ID } from "@/lib/model/types";
 import { applyTextOp, computeChanges, findReplace, TEXT_OPS, type TextOp } from "@/lib/participants/bulk";
-import { useWorkspace } from "@/features/workspace/store";
+import { undo, useWorkspace } from "@/features/workspace/store";
 
 export type BulkMode = "set" | "replace" | "fill" | "transform";
 
@@ -82,7 +82,7 @@ function BulkForm({ mode, onClose, scope, initialColumnId, initialOp }: { mode: 
 
   const apply = () => {
     updateCells(changes);
-    toast.success(`${changes.length.toLocaleString("pt-BR")} célula(s) alterada(s)`, { action: { label: "Desfazer", onClick: () => useWorkspace.temporal.getState().undo() } });
+    toast.success(`${changes.length.toLocaleString("pt-BR")} célula(s) alterada(s)`, { action: { label: "Desfazer", onClick: undo } });
     onClose();
   };
 

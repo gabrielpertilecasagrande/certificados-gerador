@@ -7,6 +7,17 @@ import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/misc";
 
+/** Aceita apenas destinos na mesma origem (evita redirecionamento aberto, ex.: "/\\evil.com"). */
+function safeNext(next: string | null): string {
+  if (!next) return "/";
+  try {
+    const url = new URL(next, window.location.origin);
+    return url.origin === window.location.origin ? url.pathname + url.search + url.hash : "/";
+  } catch {
+    return "/";
+  }
+}
+
 export function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
@@ -31,8 +42,7 @@ export function LoginForm() {
         setLoading(false);
         return;
       }
-      const next = params.get("next");
-      router.replace(next && next.startsWith("/") && !next.startsWith("//") ? next : "/");
+      router.replace(safeNext(params.get("next")));
       router.refresh();
     } catch {
       setError("Falha de conexão");

@@ -1,3 +1,4 @@
+import Papa from "papaparse";
 import type { ID, Participant } from "@/lib/model/types";
 import { capitalizeWords } from "@/lib/variables";
 
@@ -67,8 +68,10 @@ export function computeChanges(
 
 /** Converte texto TSV colado (Excel/Sheets) em matriz. */
 export function parseClipboardGrid(text: string): string[][] {
-  const rows = text.replace(/\r\n?/g, "\n").replace(/\n$/, "").split("\n");
-  return rows.map((r) => r.split("\t"));
+  const clean = text.replace(/\r\n?/g, "\n").replace(/\n$/, "");
+  if (!clean.includes("\t") && !clean.includes('"')) return clean.split("\n").map((r) => [r]);
+  // O Excel envia células com quebra de linha ou aspas entre aspas: usa um parser TSV de verdade.
+  return Papa.parse<string[]>(clean, { delimiter: "\t", newline: "\n" }).data;
 }
 
 export function toClipboardGrid(rows: string[][]): string {

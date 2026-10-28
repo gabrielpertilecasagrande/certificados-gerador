@@ -292,7 +292,7 @@ function DataGrid({ columns, rows, selected, setSelected, sort, setSort, issues,
   const scrollRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState<{ row: number; col: number } | null>(null);
   const [editing, setEditing] = useState<{ value: string } | null>(null);
-  const lastClicked = useRef<number | null>(null);
+  const lastClicked = useRef<ID | null>(null);
   const confirm = useConfirm();
   const store = useWorkspace;
 
@@ -399,12 +399,14 @@ function DataGrid({ columns, rows, selected, setSelected, sort, setSort, issues,
   const toggleRow = (idx: number, shift: boolean) => {
     const id = rows[idx].p.id;
     const next = new Set(selected);
-    if (shift && lastClicked.current !== null) {
-      const [a, b] = [Math.min(lastClicked.current, idx), Math.max(lastClicked.current, idx)];
+    // A âncora é guardada pelo id: o índice muda com busca/ordenação.
+    const anchor = lastClicked.current ? rows.findIndex((r) => r.p.id === lastClicked.current) : -1;
+    if (shift && anchor >= 0) {
+      const [a, b] = [Math.min(anchor, idx), Math.max(anchor, idx)];
       for (let i = a; i <= b; i++) next.add(rows[i].p.id);
     } else if (next.has(id)) next.delete(id);
     else next.add(id);
-    lastClicked.current = idx;
+    lastClicked.current = id;
     setSelected(next);
   };
 

@@ -122,11 +122,13 @@ export const useWorkspace = create<WorkspaceStore>()(
       const mutate = (recipe: (d: Draft<Project>) => void) => {
         const { project } = get();
         if (!project) return;
-        const next = produce(project, (d) => {
-          recipe(d);
+        const changed = produce(project, recipe);
+        // Nada mudou: não cria passo de desfazer nem marca como alterado.
+        if (changed === project) return;
+        const next = produce(changed, (d) => {
           d.updatedAt = Date.now();
         });
-        if (next !== project) set({ project: next, saveState: "dirty" });
+        set({ project: next, saveState: "dirty" });
       };
       const updateTemplate = (recipe: (t: Draft<Template>) => void, templateId?: ID) =>
         mutate((d) => recipe(activeTemplate(d, templateId ?? get().activeTemplateId)));
@@ -198,6 +200,11 @@ export const useWorkspace = create<WorkspaceStore>()(
         editElements(patches) {
           const { individualMode, activeParticipantId } = get();
           if (!individualMode || !activeParticipantId) return get().updateElements(patches);
+          if (!get().project?.participants.some((x) => x.id === activeParticipantId)) {
+            // Participante não existe mais: sai do modo individual em vez de descartar a edição.
+            set({ individualMode: false, activeParticipantId: get().project?.participants[0]?.id ?? null });
+            return get().updateElements(patches);
+          }
           mutate((d) => {
             const p = d.participants.find((x) => x.id === activeParticipantId);
             if (!p) return;
@@ -402,5 +409,29 @@ export function useActiveParticipant(): Participant | null {
   return useWorkspace((s) => s.project?.participants.find((p) => p.id === s.activeParticipantId) ?? null);
 }
 
-export const undo = () => useWorkspace.temporal.getState().undo();
-export const redo = () => useWorkspace.temporal.getState().redo();
+/** Após desfazer/refazer, seleção e participante ativo podem apontar para itens que não existem mais. */
+function revalidateUi() {
+  const s = useWorkspace.getState();
+  const p = s.project;
+  if (!p) return;
+  const template = p.templates.find((t) => t.id === s.activeTemplateId) ?? p.templates[0];
+  const elementIds = new Set(template?.elements.map((e) => e.id));
+  const participantIds = new Set(p.participants.map((x) => x.id));
+  const patch: Partial<UiState> = {};
+  if (s.selectedIds.some((id) => !elementIds.has(id))) patch.selectedIds = s.selectedIds.filter((id) => elementIds.has(id));
+  if (s.activeParticipantId && !participantIds.has(s.activeParticipantId)) {
+    patch.activeParticipantId = p.participants[0]?.id ?? null;
+    patch.individualMode = false;
+  }
+  if ([...s.selectedRowIds].some((id) => !participantIds.has(id))) patch.selectedRowIds = new Set([...s.selectedRowIds].filter((id) => participantIds.has(id)));
+  if (Object.keys(patch).length) useWorkspace.setState(patch);
+}
+
+export const undo = () => {
+  useWorkspace.temporal.getState().undo();
+  revalidateUi();
+};
+export const redo = () => {
+  useWorkspace.temporal.getState().redo();
+  revalidateUi();
+};

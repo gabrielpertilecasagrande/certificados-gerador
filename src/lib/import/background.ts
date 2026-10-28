@@ -57,6 +57,9 @@ export async function prepareArtwork(file: Blob): Promise<PreparedArtwork> {
       } catch {
         throw new Error("Não foi possível ler este PDF");
       }
+      if (doc.isEncrypted) {
+        throw new Error("Este PDF está protegido (criptografado) e não pode ser usado como fundo. Remova a proteção ou exporte a arte como PNG/JPG.");
+      }
       const pages = doc.getPages().map((p) => {
         const { width, height } = p.getCropBox();
         const rot = p.getRotation().angle % 180 !== 0;

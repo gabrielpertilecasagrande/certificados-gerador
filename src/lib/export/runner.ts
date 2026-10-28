@@ -108,6 +108,7 @@ export function runExport(req: ExportRequest, onProgress: (p: ExportProgress) =>
       emit({ status: "preparing", message: "Preparando fontes e arquivos…" });
       const fontFiles = fontFilesForTemplates(project.templates);
       await ensureFonts(fontFiles);
+      if (cancelled) return finishCancelled();
 
       if (settings.format === "png-zip" || settings.format === "jpg-zip") {
         await rasterExport();
@@ -116,12 +117,14 @@ export function runExport(req: ExportRequest, onProgress: (p: ExportProgress) =>
       }
       if (cancelled) return finishCancelled();
 
-      emit({ status: "finishing", message: "Finalizando arquivo…" });
-      const blob = zip ? await zip.finish() : await sink.close();
       if (progress.done - progress.failures.length === 0) {
+        // Nada gerado: descarta o destino (evita arquivo vazio no disco).
+        await (zip ? zip.abort() : sink.abort()).catch(() => {});
         emit({ status: "error", message: "Nenhum certificado foi gerado." });
         return progress;
       }
+      emit({ status: "finishing", message: "Finalizando arquivo…" });
+      const blob = zip ? await zip.finish() : await sink.close();
       emit({ status: "done", message: undefined, result: { blob, fileName, savedToDisk: !!req.writable, count: progress.done - progress.failures.length } });
       return progress;
     } catch (e) {
@@ -143,12 +146,14 @@ export function runExport(req: ExportRequest, onProgress: (p: ExportProgress) =>
       const assetIds = new Set<string>();
       for (const t of project.templates) {
         if (t.background?.visible) assetIds.add(t.background.assetId);
-        for (const el of t.elements) if (el.type === "image" && !el.hidden) assetIds.add(el.assetId);
+        // Inclui imagens ocultas no modelo: um ajuste individual pode exibi-las.
+        for (const el of t.elements) if (el.type === "image") assetIds.add(el.assetId);
       }
       const assets: WorkerStart["assets"] = {};
       for (const id of assetIds) assets[id] = await getAssetBytes(id);
       const fonts: WorkerStart["fonts"] = {};
       for (const f of fontFilesForTemplates(project.templates)) fonts[f] = browserFonts.getBytes(f).slice();
+      if (cancelled) return;
 
       emit({ status: "running", message: undefined });
       const merged = settings.format === "pdf-merged";

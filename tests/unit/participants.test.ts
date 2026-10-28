@@ -35,6 +35,14 @@ describe("edição em massa", () => {
       ["c", "d"],
     ]);
   });
+
+  it("respeita células com quebra de linha e aspas coladas do Excel", () => {
+    expect(parseClipboardGrid('Ana\t"Rua A\nApto 2"\nBia\t"Diz ""oi"""\n')).toEqual([
+      ["Ana", "Rua A\nApto 2"],
+      ["Bia", 'Diz "oi"'],
+    ]);
+    expect(parseClipboardGrid("um\ndois")).toEqual([["um"], ["dois"]]);
+  });
 });
 
 describe("importação de planilhas", () => {

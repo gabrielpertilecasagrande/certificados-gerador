@@ -11,7 +11,12 @@ const attempts = new Map<string, number[]>();
 
 function recent(key: string, now: number): number[] {
   const list = (attempts.get(key) ?? []).filter((t) => now - t < WINDOW_MS);
-  attempts.set(key, list);
+  if (list.length) attempts.set(key, list);
+  else attempts.delete(key);
+  // Evita crescimento sem limite: descarta chaves antigas.
+  if (attempts.size > 10_000) {
+    for (const [k, v] of attempts) if (!v.some((t) => now - t < WINDOW_MS)) attempts.delete(k);
+  }
   return list;
 }
 
@@ -22,7 +27,9 @@ export function checkRateLimit(key: string, now = Date.now()): { allowed: boolea
 }
 
 export function registerFailure(key: string, now = Date.now()) {
-  recent(key, now).push(now);
+  const list = recent(key, now);
+  list.push(now);
+  attempts.set(key, list);
 }
 
 export function resetAttempts(key: string) {
