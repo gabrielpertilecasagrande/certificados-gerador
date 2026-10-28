@@ -1,10 +1,13 @@
 "use client";
 
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { CircleAlert, CircleCheck, FileSpreadsheet, LayoutGrid, Pencil, Square, TriangleAlert } from "lucide-react";
+import { CircleAlert, CircleCheck, Download, FileSpreadsheet, LayoutGrid, Pencil, Square, TriangleAlert } from "lucide-react";
+import { toast } from "sonner";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge, Segmented, Spinner } from "@/components/ui/misc";
+import { Badge, Segmented, Spinner, Tip } from "@/components/ui/misc";
+import { runExport } from "@/lib/export/runner";
+import { downloadBlob } from "@/lib/runtime/download";
 import { Select } from "@/components/ui/input";
 import type { ID, Participant } from "@/lib/model/types";
 import { resolveCertificate, templateFor } from "@/lib/render/resolve";
@@ -154,11 +157,25 @@ function SingleActions({ hidden }: { hidden: boolean }) {
   return (
     <div className="flex items-center gap-2">
       {n > 0 && <Badge tone="warning">Ajuste individual</Badge>}
+      <Tip label="Baixar PDF deste certificado">
+        <Button size="icon" variant="secondary" aria-label="Baixar PDF deste certificado" onClick={() => downloadOne(participant.id)}>
+          <Download />
+        </Button>
+      </Tip>
       <Button size="sm" onClick={() => setUi({ tab: "editor", individualMode: true })} data-testid="edit-individual">
         <Pencil /> Editar somente este certificado
       </Button>
     </div>
   );
+}
+
+async function downloadOne(id: ID) {
+  const project = useWorkspace.getState().project;
+  if (!project) return;
+  const job = runExport({ project, ids: [id], settings: { ...project.exportSettings, format: "pdf-single" } }, () => {});
+  const r = await job.promise;
+  if (r.status === "done" && r.result?.blob) downloadBlob(r.result.blob, r.result.fileName);
+  else toast.error(r.message ?? "Não foi possível gerar o PDF");
 }
 
 function SinglePreview() {

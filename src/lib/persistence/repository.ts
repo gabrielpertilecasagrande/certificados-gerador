@@ -22,8 +22,14 @@ export function summarize(p: Project): ProjectSummary {
     name: p.name,
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,
-    status: p.status,
+    status: deriveStatus(p),
     participantCount: p.participants.length,
     thumbnailAssetId: p.thumbnailAssetId,
   };
+}
+
+/** "Pronto" quando já há participantes e campos no modelo; "Exportado" após a primeira exportação. */
+export function deriveStatus(p: Project): Project["status"] {
+  if (p.status === "exported") return "exported";
+  return p.participants.length > 0 && p.templates.some((t) => t.elements.length > 0) ? "ready" : "draft";
 }

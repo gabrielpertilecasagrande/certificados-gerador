@@ -1,6 +1,6 @@
 "use client";
 
-import { produce, type Draft } from "immer";
+import { current, produce, type Draft } from "immer";
 import { create } from "zustand";
 import { temporal } from "zundo";
 import type {
@@ -221,7 +221,7 @@ export const useWorkspace = create<WorkspaceStore>()(
           updateTemplate((t) => {
             const groupMap = new Map<ID, ID>();
             for (const el of t.elements.filter((e) => ids.includes(e.id))) {
-              const copy = { ...structuredClone(el), id: newId(), x: el.x + offset, y: el.y + offset, name: `${el.name} (cópia)`, locked: false };
+              const copy = { ...structuredClone(current(el)), id: newId(), x: el.x + offset, y: el.y + offset, name: `${el.name} (cópia)`, locked: false };
               if (el.groupId) {
                 if (!groupMap.has(el.groupId)) groupMap.set(el.groupId, newId());
                 copy.groupId = groupMap.get(el.groupId);
@@ -358,7 +358,7 @@ export const useWorkspace = create<WorkspaceStore>()(
             const out: Draft<Participant>[] = [];
             for (const p of d.participants) {
               out.push(p);
-              if (ids.includes(p.id)) out.push({ ...structuredClone(p), id: newId() } as Draft<Participant>);
+              if (ids.includes(p.id)) out.push({ ...structuredClone(current(p)), id: newId() } as Draft<Participant>);
             }
             d.participants = out;
           });

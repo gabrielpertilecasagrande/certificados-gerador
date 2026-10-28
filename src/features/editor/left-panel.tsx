@@ -33,6 +33,7 @@ import { newId } from "@/lib/utils/id";
 import { mmToPt } from "@/lib/utils/units";
 import { DERIVED_KEYS, knownVariables, PRESET_VARIABLES, slugify, uniqueKey } from "@/lib/variables";
 import { useActiveTemplate, useWorkspace } from "@/features/workspace/store";
+import { blurFields } from "./editor-canvas";
 import { importImageAsset } from "./insert-assets";
 
 type Tab = "insert" | "layers" | "data";
@@ -381,7 +382,10 @@ function LayersTab({ template }: { template: Template }) {
                 selected ? "bg-primary-soft text-primary" : "hover:bg-surface-2",
                 el.hidden && "opacity-50",
               )}
-              onClick={(e) => setUi({ selectedIds: e.shiftKey ? [...new Set([...selectedIds, el.id])] : [el.id] })}
+              onClick={(e) => {
+                blurFields();
+                setUi({ selectedIds: e.shiftKey ? [...new Set([...selectedIds, el.id])] : [el.id] });
+              }}
               onDoubleClick={() => setEditing(el.id)}
             >
               <Icon className="size-3.5 shrink-0" />

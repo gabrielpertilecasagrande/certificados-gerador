@@ -71,7 +71,7 @@ function ProjectName() {
     );
   }
   return (
-    <button className="max-w-[16rem] truncate rounded-md px-2 py-1 text-sm font-semibold hover:bg-surface-2" onClick={() => setEditing(true)} title="Renomear projeto">
+    <button className="hidden max-w-[16rem] truncate rounded-md px-2 py-1 text-sm font-semibold hover:bg-surface-2 sm:block" onClick={() => setEditing(true)} title="Renomear projeto">
       {name}
     </button>
   );
@@ -98,15 +98,17 @@ export function TopBar() {
       <ProjectName />
       <SaveIndicator />
 
-      <nav className="mx-auto flex items-center gap-0.5 overflow-x-auto rounded-lg bg-surface-2 p-0.5" role="tablist">
+      <nav className="mx-auto flex min-w-0 items-center gap-0.5 overflow-x-auto rounded-lg bg-surface-2 p-0.5" role="tablist">
         {TABS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             role="tab"
             aria-selected={tab === id}
+            aria-label={label}
+            title={label}
             onClick={() => setUi({ tab: id })}
             className={cn(
-              "flex h-8 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-md px-3 text-[13px] font-medium text-muted transition-colors hover:text-foreground",
+              "flex h-8 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 text-[13px] sm:px-3 font-medium text-muted transition-colors hover:text-foreground",
               tab === id && "bg-surface text-foreground shadow-soft",
             )}
           >
@@ -117,6 +119,7 @@ export function TopBar() {
       </nav>
 
       <div className="flex items-center gap-0.5">
+        <div className="hidden items-center gap-0.5 sm:flex">
         <Tip label="Desfazer" shortcut="Ctrl+Z">
           <Button variant="ghost" size="icon" disabled={!canUndo} onClick={undo} aria-label="Desfazer">
             <Undo2 />
@@ -127,6 +130,7 @@ export function TopBar() {
             <Redo2 />
           </Button>
         </Tip>
+        </div>
         {tab === "editor" && (
           <div className="ml-1 hidden items-center gap-0.5 border-l border-border pl-1.5 lg:flex">
             <Button variant="ghost" size="icon" onClick={() => zoomBy(1 / 1.2)} aria-label="Diminuir zoom">

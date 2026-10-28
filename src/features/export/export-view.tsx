@@ -121,8 +121,8 @@ export function ExportView() {
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto bg-background scrollbar-thin">
-      <div className="mx-auto grid max-w-6xl gap-6 px-4 py-6 lg:grid-cols-[1fr_380px]">
-        <div className="space-y-5">
+      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-4 py-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="min-w-0 space-y-5">
           <Card title="Formato">
             <div className="grid gap-2 sm:grid-cols-2" role="radiogroup">
               {FORMATS.map((f) => (

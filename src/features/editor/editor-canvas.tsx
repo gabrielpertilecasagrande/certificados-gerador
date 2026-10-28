@@ -78,28 +78,36 @@ export function EditorCanvas({ template, cert, overriddenIds, individualMode }: 
   const W = template.page.widthPt;
   const H = template.page.heightPt;
 
+  const prevZoom = useRef(zoom);
+
   // Ajustar à tela: ao abrir, ao mudar o tamanho da página e quando pedido.
   const fit = useCallback(() => {
     if (!size.width || !size.height) return;
     const z = Math.min((size.width - 96) / W, (size.height - 96) / H);
     const zoomFit = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z));
+    // O ajuste define zoom e posição juntos: evita a recentralização do efeito de zoom.
+    prevZoom.current = zoomFit;
     setView({ zoom: zoomFit });
     setOffset({ x: (size.width - W * zoomFit) / 2, y: (size.height - H * zoomFit) / 2 });
   }, [size.width, size.height, W, H, setView]);
 
-  const hasSize = size.width > 0;
+  // Enquanto o usuário não mexer no zoom/posição, a página acompanha o tamanho da área.
+  const userAdjusted = useRef(false);
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza a vista com o tamanho do contêiner
+    userAdjusted.current = false;
+  }, [fitNonce, W, H]);
+  useEffect(() => {
+    if (userAdjusted.current) return;
     fit();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fitNonce, hasSize, W, H]);
+  }, [fitNonce, size.width, size.height, W, H]);
 
   // Zoom por botões mantém o centro da área visível.
-  const prevZoom = useRef(zoom);
   useEffect(() => {
     const prev = prevZoom.current;
     prevZoom.current = zoom;
     if (prev === zoom || !size.width) return;
+    userAdjusted.current = true;
     const cx = size.width / 2;
     const cy = size.height / 2;
     setOffset((o) => ({ x: cx - ((cx - o.x) / prev) * zoom, y: cy - ((cy - o.y) / prev) * zoom }));
@@ -209,6 +217,7 @@ export function EditorCanvas({ template, cert, overriddenIds, individualMode }: 
 
   const handleWheel = (e: Konva.KonvaEventObject<WheelEvent>) => {
     e.evt.preventDefault();
+    userAdjusted.current = true;
     const stage = stageRef.current;
     if (!stage) return;
     if (e.evt.ctrlKey || e.evt.metaKey) {
@@ -229,6 +238,7 @@ export function EditorCanvas({ template, cert, overriddenIds, individualMode }: 
     const pos = stage.getPointerPosition();
     if (!pos) return;
     if (spaceDown || e.evt.button === 1) {
+      userAdjusted.current = true;
       panning.current = { x: pos.x, y: pos.y, ox: offset.x, oy: offset.y };
       return;
     }
@@ -386,7 +396,7 @@ export function EditorCanvas({ template, cert, overriddenIds, individualMode }: 
   const cursor = spaceDown ? "grab" : undefined;
 
   return (
-    <div ref={ref} className="relative h-full w-full overflow-hidden bg-canvas" style={{ cursor }} data-testid="editor-canvas">
+    <div ref={ref} className="relative h-full w-full overflow-hidden bg-canvas" style={{ cursor }} data-testid="editor-canvas" onMouseDown={blurFields}>
       {size.width > 0 && (
         <Stage
           ref={stageRef}
@@ -397,6 +407,12 @@ export function EditorCanvas({ template, cert, overriddenIds, individualMode }: 
           onMouseMove={onStageMouseMove}
           onMouseUp={onStageMouseUp}
           onMouseLeave={() => (panning.current = null)}
+          onContextMenu={(e) => {
+            const group = e.target.findAncestor((n: Konva.Node) => n.id().startsWith("el-"), true);
+            const id = group?.id().slice(3);
+            const el = id ? elementsById.get(id) : undefined;
+            if (el && !selectedIds.includes(el.id)) selectElement(el, false);
+          }}
         >
           <Layer>
             <Group x={offset.x} y={offset.y} scaleX={zoom} scaleY={zoom}>
@@ -483,6 +499,12 @@ export function EditorCanvas({ template, cert, overriddenIds, individualMode }: 
 }
 
 type Common = Record<string, unknown> & { id: string };
+
+/** O canvas não recebe foco: tira o foco de campos de texto para que os atalhos voltem a funcionar. */
+export function blurFields() {
+  const el = document.activeElement as HTMLElement | null;
+  if (el?.matches("input, textarea, select")) el.blur();
+}
 
 function TextNode({
   item,

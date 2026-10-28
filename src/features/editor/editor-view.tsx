@@ -8,6 +8,7 @@ import { useFontsVersion, useResolved } from "@/features/workspace/hooks";
 import { ParticipantNav } from "@/features/workspace/participant-nav";
 import { useActiveParticipant, useActiveTemplate, useWorkspace } from "@/features/workspace/store";
 import { cn } from "@/lib/utils/cn";
+import { CanvasContextMenu } from "./canvas-context-menu";
 import { EditorCanvas } from "./editor-canvas";
 import { LeftPanel } from "./left-panel";
 import { PropertiesPanel } from "./properties-panel";
@@ -41,7 +42,11 @@ export function EditorView() {
           </div>
         )}
         <div className="relative min-h-0 flex-1">
-          <EditorCanvas template={template} cert={cert} overriddenIds={overriddenIds} individualMode={individualMode} />
+          <CanvasContextMenu>
+            <div className="h-full w-full">
+              <EditorCanvas template={template} cert={cert} overriddenIds={overriddenIds} individualMode={individualMode} />
+            </div>
+          </CanvasContextMenu>
         </div>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-border bg-surface px-3 py-2">
           {project.participants.length > 0 ? (
@@ -66,7 +71,7 @@ export function EditorView() {
           ) : (
             <div className="flex items-center gap-2 text-[13px] text-muted">
               <Badge>Dados de exemplo</Badge>
-              Importe a planilha para ver os certificados reais.
+              <span className="hidden md:inline">Importe a planilha para ver os certificados reais.</span>
               <Button size="sm" variant="secondary" onClick={() => setUi({ tab: "participants" })}>
                 <FileSpreadsheet /> Importar participantes
               </Button>
